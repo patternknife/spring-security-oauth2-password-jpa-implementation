@@ -1,6 +1,7 @@
 # Spring Security Oauth2 Password JPA Implementation
 ## Overview
 
+* This library enables developers to easily use the Resource Owner Password Credentials (ROPC) grant type from OAuth 2.0 in Spring Security 6 and Spring Boot 3.x, which requires more customization compared to Spring Security 5 and Spring Boot 2.x.
 * Complete separation of the library (API) and the client for testing it
 ```xml
 <dependency>
@@ -39,7 +40,7 @@
 * Authentication management based on a combination of username, client ID, and App-Token
   * What is an App-Token? An App-Token is a new access token generated each time the same account logs in. If the token values are the same, the same access token is shared.
 * Separated UserDetails implementation for Admin and Customer roles as an example. (This can be extended as desired by implementing ``UserDetailsServiceFactory``)
-* Provide MySQL DDL, which consists of oauth\_access\_token, oauth\_refresh\_token and oauth\_client\_details, which is tables in Security 5. As I mean to migrate current security system to Security 6, I haven't changed them to the ``authorization`` table indicated in https://github.com/spring-projects/spring-authorization-server.
+* Provide MySQL DDL, which consists of oauth\_access\_token, oauth\_refresh\_token and oauth\_client\_details, which is tables in Security 5. As I mean to migrate current security system to Security 6, I haven't changed them to the ``authorization`` table indicated in https://github.com/spring-projects/spring-authorization-server, as ROPC (Resource Owner Password Credentials Grant Type) is supported in Spring Security 5.
 * Application of Spring Rest Docs
  
 ## Dependencies
