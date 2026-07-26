@@ -7,7 +7,7 @@ import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.res
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.message.DefaultSecurityUserExceptionMessage;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.message.ISecurityUserExceptionMessageService;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.util.EasyPlusOrderConstants;
-import lombok.RequiredArgsConstructor;;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
