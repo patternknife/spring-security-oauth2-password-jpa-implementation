@@ -229,6 +229,25 @@ public class CommonDataSourceConfiguration {
           patternhelloworld.securityhelper.oauth2.introspection.client-id=client_customer
           patternhelloworld.securityhelper.oauth2.introspection.client-secret=12345
         ```
+
+- **Customize token expiration as desired (`EasyPlusTokenExpirationPolicy`)**
+    - By default, token expirations follow the TTLs in the ``RegisteredClient``'s ``TokenSettings`` (standard Spring Authorization Server behavior).
+    - Optionally, enable "rollover" to push expirations to a low-traffic hour (e.g. 3 AM) so users are not logged out in the middle of long flows such as payments or reservations.
+    - The rollover time zone is resolved per token type in the following order: the ``X-Zone-Id`` request header at token issuance (if ``zone-header-enabled``, for global apps where each user has a different zone) → the fixed ``zone-id`` property → no rollover (pure TTL). An invalid header value silently falls back and never breaks the login flow. Since the maximum extension is bounded by the rollover window (< 24h) regardless of the claimed zone, the client-supplied header gives no meaningful advantage to a malicious client.
+    - Register your own ``EasyPlusTokenExpirationPolicy`` bean to replace the policy entirely.
+    - ```properties
+          # Example: access tokens expire at the next 3 AM (in the user's zone if the X-Zone-Id header is sent, otherwise Asia/Seoul)
+          #          on or after "issuedAt + accessTokenTimeToLive". Disabled by default (pure TTL).
+          patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.enabled=true
+          patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.hour=3
+          patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.zone-id=Asia/Seoul
+          patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.zone-header-enabled=true
+          # The same set of properties exists for refresh tokens. (A refresh token preserved across re-logins keeps its original expiration.)
+          patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.enabled=false
+          patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.hour=3
+          patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.zone-id=
+          patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.zone-header-enabled=false
+        ```
 ## OAuth2 - ROPC
 * Refer to ``client/src/docs/asciidoc/api-app.adoc``
 

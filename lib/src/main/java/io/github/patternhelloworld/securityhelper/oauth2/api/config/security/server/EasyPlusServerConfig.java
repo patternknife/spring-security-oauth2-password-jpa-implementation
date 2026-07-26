@@ -25,6 +25,9 @@ import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.ser
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.serivce.persistence.authorization.OAuth2AuthorizationServiceImpl;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.serivce.persistence.client.CacheableRegisteredClientRepositoryImpl;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.serivce.userdetail.ConditionalDetailsService;
+import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.expiration.DefaultTokenExpirationPolicy;
+import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.expiration.EasyPlusTokenExpirationPolicy;
+import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.expiration.TokenExpirationRolloverProperties;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.generator.CustomDelegatingOAuth2TokenGenerator;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.validator.endpoint.authorization.CodeRequestValidator;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.validator.endpoint.token.CodeValidationResult;
@@ -262,6 +265,32 @@ public class EasyPlusServerConfig {
     @ConditionalOnMissingBean(SecurityPointCut.class)
     public SecurityPointCut securityPointCut() {
         return new DefaultSecurityPointCut();
+    }
+
+    /*
+     *   Token expiration policy
+     *
+     *   By default, expirations follow the TTLs in the RegisteredClient's TokenSettings (standard behavior).
+     *   Enable "rollover" to push expirations to a low-traffic hour (e.g. 3 AM) so that users are not
+     *   logged out in the middle of flows such as payments or reservations.
+     *
+     *   Zone resolution per token type: X-Zone-Id header (if zone-header-enabled) -> fixed zone-id -> pure TTL.
+     *   Register your own EasyPlusTokenExpirationPolicy bean to replace this policy entirely.
+     * */
+    @Bean
+    @ConditionalOnMissingBean(EasyPlusTokenExpirationPolicy.class)
+    public EasyPlusTokenExpirationPolicy tokenExpirationPolicy(
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.enabled:false}") boolean accessRolloverEnabled,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.hour:3}") int accessRolloverHour,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.zone-id:}") String accessRolloverZoneId,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.access.rollover.zone-header-enabled:false}") boolean accessRolloverZoneHeaderEnabled,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.enabled:false}") boolean refreshRolloverEnabled,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.hour:3}") int refreshRolloverHour,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.zone-id:}") String refreshRolloverZoneId,
+            @Value("${patternhelloworld.securityhelper.oauth2.token.expiration.refresh.rollover.zone-header-enabled:false}") boolean refreshRolloverZoneHeaderEnabled) {
+        return new DefaultTokenExpirationPolicy(
+                TokenExpirationRolloverProperties.of(accessRolloverEnabled, accessRolloverHour, accessRolloverZoneId, accessRolloverZoneHeaderEnabled),
+                TokenExpirationRolloverProperties.of(refreshRolloverEnabled, refreshRolloverHour, refreshRolloverZoneId, refreshRolloverZoneHeaderEnabled));
     }
 
     @Bean

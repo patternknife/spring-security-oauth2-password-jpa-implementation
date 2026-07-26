@@ -50,6 +50,7 @@ public class EasyPlusOAuth2EndpointUtils {
         allParameters.put(EasyPlusHttpHeaders.APP_TOKEN, request.getHeader(EasyPlusHttpHeaders.APP_TOKEN));
         allParameters.put(EasyPlusHttpHeaders.USER_AGENT, request.getHeader(EasyPlusHttpHeaders.USER_AGENT));
         allParameters.put(EasyPlusHttpHeaders.X_Forwarded_For, request.getHeader(EasyPlusHttpHeaders.X_Forwarded_For));
+        allParameters.put(EasyPlusHttpHeaders.X_ZONE_ID, request.getHeader(EasyPlusHttpHeaders.X_ZONE_ID));
 
         if(!allParameters.containsKey("client_id") || StringUtils.isEmpty((String)allParameters.get("client_id"))){
             BasicTokenResolver.BasicCredentials basicCredentials = BasicTokenResolver.parse(request.getHeader("Authorization")).orElseThrow(EasyPlusOauth2AuthenticationException::new);
@@ -74,6 +75,11 @@ public class EasyPlusOAuth2EndpointUtils {
         String xForwardedFor = request.getHeader(EasyPlusHttpHeaders.X_Forwarded_For);
         if (xForwardedFor != null) {
             allParameters.add(EasyPlusHttpHeaders.X_Forwarded_For, xForwardedFor);
+        }
+
+        String xZoneId = request.getHeader(EasyPlusHttpHeaders.X_ZONE_ID);
+        if (xZoneId != null) {
+            allParameters.add(EasyPlusHttpHeaders.X_ZONE_ID, xZoneId);
         }
 
         return allParameters;

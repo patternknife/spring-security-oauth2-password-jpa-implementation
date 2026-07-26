@@ -174,6 +174,7 @@ public class TraditionalOauthServiceTest {
             map.put("App-Token", null);
             map.put("User-Agent", null);
             map.put("X-Forwarded-For", null);
+            map.put("X-Zone-Id", null);
             map.put("client_id", basicCredentials.getClientId());
 
             // Mock the save method of commonOAuth2AuthorizationSaver
