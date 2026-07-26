@@ -1,9 +1,12 @@
 package io.github.patternhelloworld.securityhelper.oauth2.api.config.security.serivce.authentication;
 
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.EasyPlusGrantAuthenticationToken;
+import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.expiration.EasyPlusTokenExpirationPolicy;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.generator.CustomAccessTokenCustomizer;
 import io.github.patternhelloworld.securityhelper.oauth2.api.config.security.token.generator.CustomDelegatingOAuth2TokenGenerator;
+import io.github.patternhelloworld.securityhelper.oauth2.api.config.util.EasyPlusHttpHeaders;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -21,6 +24,7 @@ import org.springframework.security.oauth2.server.authorization.token.DefaultOAu
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +40,7 @@ public class OAuth2AuthorizationBuildingServiceImpl implements OAuth2Authorizati
 
     private final RegisteredClientRepository registeredClientRepository;
     private final CustomDelegatingOAuth2TokenGenerator customTokenGenerator;
+    private final EasyPlusTokenExpirationPolicy tokenExpirationPolicy;
 
 
     private OAuth2Authorization build(String clientId, UserDetails userDetails,
@@ -75,9 +80,11 @@ public class OAuth2AuthorizationBuildingServiceImpl implements OAuth2Authorizati
                 Instant.now().plus(10, ChronoUnit.MINUTES) // Expired
         );
 
+        ZoneId userZone = parseZoneIdSafely(easyPlusGrantAuthenticationToken.getAdditionalParameters().get(EasyPlusHttpHeaders.X_ZONE_ID));
+
         customTokenGenerator.setCustomizer(
                 CustomDelegatingOAuth2TokenGenerator.GeneratorType.ACCESS_TOKEN,
-                new CustomAccessTokenCustomizer(clientId,userDetails)
+                new CustomAccessTokenCustomizer(clientId, userDetails, tokenExpirationPolicy, userZone)
         );
 
 
@@ -101,7 +108,12 @@ public class OAuth2AuthorizationBuildingServiceImpl implements OAuth2Authorizati
                 .authorizedScopes(scopeSet)
                 .build());
 
-
+        // A preserved refresh token keeps its original expiration; the policy only applies to newly generated ones.
+        Instant refreshTokenExpiresAt = shouldBePreservedRefreshToken != null
+                ? refreshToken.getExpiresAt()
+                : tokenExpirationPolicy.refreshTokenExpiresAt(
+                        refreshToken.getIssuedAt() != null ? refreshToken.getIssuedAt() : Instant.now(),
+                        registeredClient, userZone);
 
         return OAuth2Authorization
                 .withRegisteredClient(registeredClient)
@@ -121,9 +133,21 @@ public class OAuth2AuthorizationBuildingServiceImpl implements OAuth2Authorizati
                 .refreshToken(new OAuth2RefreshToken(
                         refreshToken.getTokenValue(),
                         refreshToken.getIssuedAt(),
-                        refreshToken.getExpiresAt()
+                        refreshTokenExpiresAt
                 ))
                 .build();
+    }
+
+    private static @Nullable ZoneId parseZoneIdSafely(@Nullable Object headerValue) {
+        if (headerValue == null) {
+            return null;
+        }
+        try {
+            return ZoneId.of(headerValue.toString().trim());
+        } catch (Exception e) {
+            // A client-supplied header must never break the login flow; fall back to the configured zone.
+            return null;
+        }
     }
 
     @Override
